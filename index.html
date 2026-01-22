@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple 2D Shooter</title>
+    <style>
+        body {
+            margin: 0;
+            background: #111;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        canvas {
+            border: 2px solid #555;
+            background: #000;
+            display: block;
+        }
+        .ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ui">
+        <h1>Score: <span id="score">0</span></h1>
+        <p>Use <b>WASD</b> to Move | <b>Click</b> to Shoot</p>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+
+        // Set canvas size
+        canvas.width = 800;
+        canvas.height = 600;
+
+        // Game State
+        let score = 0;
+        let gameActive = true;
+
+        // Player Object
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 15,
+            color: '#00d2ff',
+            speed: 5
+        };
+
+        const projectiles = [];
+        const enemies = [];
+        const keys = {};
+
+        // Track Input
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        // Shoot on Click
+        window.addEventListener('mousedown', (e) => {
+            if (!gameActive) return;
+            
+            // Calculate angle between player and mouse
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+
+            projectiles.push({
+                x: player.x,
+                y: player.y,
+                velocity: {
+                    x: Math.cos(angle) * 6,
+                    y: Math.sin(angle) * 6
+                }
+            });
+        });
+
+        function spawnEnemy() {
+            const radius = Math.random() * (30 - 10) + 10;
+            let x, y;
+
+            // Spawn from random edges
+            if (Math.random() < 0.5) {
+                x = Math.random() < 0.5 ? 0 - radius : canvas.width + radius;
+                y = Math.random() * canvas.height;
+            } else {
+                x = Math.random() * canvas.width;
+                y = Math.random() < 0.5 ? 0 - radius : canvas.height + radius;
+            }
+
+            const angle = Math.atan2(player.y - y, player.x - x);
+            enemies.push({
+                x, y, radius, 
+                color: `hsl(${Math.random() * 360}, 50%, 50%)`,
+                velocity: {
+                    x: Math.cos(angle) * 2,
+                    y: Math.sin(angle) * 2
+                }
+            });
+        }
+
+        function update() {
+            if (!gameActive) return;
+
+            // Move Player
+            if (keys['KeyW'] && player.y > 0) player.y -= player.speed;
+            if (keys['KeyS'] && player.y < canvas.height) player.y += player.speed;
+            if (keys['KeyA'] && player.x > 0) player.x -= player.speed;
+            if (keys['KeyD'] && player.x < canvas.width) player.x += player.speed;
+
+            // Update Projectiles
+            projectiles.forEach((p, index) => {
+                p.x += p.velocity.x;
+                p.y += p.velocity.y;
+
+                // Remove if off screen
+                if (p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) {
+                    projectiles.splice(index, 1);
+                }
+            });
+
+            // Update Enemies
+            enemies.forEach((enemy, eIndex) => {
+                enemy.x += enemy.velocity.x;
+                enemy.y += enemy.velocity.y;
+
+                // Collision: Enemy vs Player
+                const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+                if (dist - enemy.radius - player.radius < 1) {
+                    gameActive = false;
+                    alert("Game Over! Final Score: " + score);
+                    location.reload();
+                }
+
+                // Collision: Enemy vs Projectile
+                projectiles.forEach((p, pIndex) => {
+                    const dist = Math.hypot(p.x - enemy.x, p.y - enemy.y);
+                    if (dist - enemy.radius < 1) {
+                        // Create explosion effect/remove
+                        setTimeout(() => {
+                            enemies.splice(eIndex, 1);
+                            projectiles.splice(pIndex, 1);
+                            score += 100;
+                            scoreElement.innerText = score;
+                        }, 0);
+                    }
+                });
+            });
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Trail effect
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Player
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fillStyle = player.color;
+            ctx.fill();
+
+            // Draw Projectiles
+            projectiles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+            });
+
+            // Draw Enemies
+            enemies.forEach(enemy => {
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+                ctx.fillStyle = enemy.color;
+                ctx.fill();
+            });
+        }
+
+        function animate() {
+            update();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        setInterval(spawnEnemy, 1000);
+        animate();
+    </script>
+</body>
+</html>
