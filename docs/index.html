@@ -175,8 +175,6 @@
         </button>
 
         <div class="stats">
-          <div class="stat"><div>Miners</div><div id="minersCount">0</div></div>
-          <div class="stat"><div>Rigs</div><div id="rigsCount">0</div></div>
           <div class="stat"><div>Servers</div><div id="serversCount">0</div></div>
           <div class="stat"><div>Overclocks</div><div id="overclockCount">0</div></div>
           <div class="stat"><div>All-time mined</div><div id="allTime">0 sats</div></div>
@@ -186,30 +184,7 @@
       <section class="shop">
         <h3 style="margin:0">Shop</h3>
 
-        <div class="item" id="item-miner">
-          <div class="meta">
-            <h4>Miner</h4>
-            <p>Small ASIC miner — adds passive income.</p>
-          </div>
-          <div style="text-align:right">
-            <div class="small" id="minerGain">+50 sats/s</div>
-            <div class="small" id="minerCost">Cost: 15000 sats</div>
-            <button id="buyMinerBtn">Buy</button>
-          </div>
-        </div>
-
-        <div class="item" id="item-rig">
-          <div class="meta">
-            <h4>GPU Rig</h4>
-            <p>Better hardware — larger passive income.</p>
-          </div>
-          <div style="text-align:right">
-            <div class="small" id="rigGain">+1200 sats/s</div>
-            <div class="small" id="rigCost">Cost: 300000 sats</div>
-            <button id="buyRigBtn">Buy</button>
-          </div>
-        </div>
-
+        
         <!-- New: Server (adds to click power) -->
         <div class="item" id="item-server">
           <div class="meta">
@@ -323,14 +298,10 @@
     const DEFAULT_STATE = {
       sats: 0,
       clickPower: 1000, // sats per click base
-      miners: 0,
-      rigs: 0,
       servers: 0,
       overclocks: 0,
 
       // costs
-      minerCost: 15000,
-      rigCost: 300000,
       serverCost: 50000,
       overclockCost: 100000,
 
@@ -347,10 +318,6 @@
       topRecord: 0
     };
 
-    // Gains
-    const MINER_SPS = 50;   // sats per second per miner
-    const RIG_SPS = 1200;   // sats per second per rig
-
     // State
     let state = loadState();
 
@@ -360,13 +327,9 @@
     const clickPowerEl = document.getElementById('clickPower');
     const ppsEl = document.getElementById('pps');
     const mineBtn = document.getElementById('mineBtn');
-    const minersCount = document.getElementById('minersCount');
-    const rigsCount = document.getElementById('rigsCount');
     const serversCount = document.getElementById('serversCount');
     const overclockCount = document.getElementById('overclockCount');
     const allTimeEl = document.getElementById('allTime');
-    const minerCostEl = document.getElementById('minerCost');
-    const rigCostEl = document.getElementById('rigCost');
     const serverCostEl = document.getElementById('serverCost');
     const serverGainEl = document.getElementById('serverGain');
     const serverCapacityEl = document.getElementById('serverCapacityEl');
@@ -376,10 +339,6 @@
     const dcCostEl = document.getElementById('dcCost');
     const dcCountEl = document.getElementById('dcCountEl');
     const serverCapInfo = document.getElementById('serverCapInfo');
-    const minerGainEl = document.getElementById('minerGain');
-    const rigGainEl = document.getElementById('rigGain');
-    const buyMinerBtn = document.getElementById('buyMinerBtn');
-    const buyRigBtn = document.getElementById('buyRigBtn');
     const buyServerBtn = document.getElementById('buyServerBtn');
     const buyRackBtn = document.getElementById('buyRackBtn');
     const buyDCBtn = document.getElementById('buyDCBtn');
@@ -397,10 +356,6 @@
     function formatSats(n){
       return Math.floor(n).toLocaleString() + ' sats';
     }
-    function roundCost(n){ return Math.max(1, Math.round(n)); }
-    function computePassive(){
-      return state.miners * MINER_SPS + state.rigs * RIG_SPS;
-    }
 
     // ---------- UI updates ----------
     function updateUI(pulse=false){
@@ -408,14 +363,10 @@
       satsAmount.textContent = formatSats(state.sats);
       clickPowerEl.textContent = formatSats(state.clickPower);
       ppsEl.textContent = formatSats(computePassive()) + '/s';
-      minersCount.textContent = state.miners;
-      rigsCount.textContent = state.rigs;
       serversCount.textContent = state.servers;
       overclockCount.textContent = state.overclocks;
       allTimeEl.textContent = formatSats(state.allTimeMined);
 
-      minerCostEl.textContent = 'Cost: ' + formatSats(state.minerCost);
-      rigCostEl.textContent = 'Cost: ' + formatSats(state.rigCost);
       serverCostEl.textContent = 'Cost: ' + formatSats(state.serverCost);
       serverGainEl.textContent = '+'+SERVER_CLICK_GAIN+' sats/click';
 
@@ -429,13 +380,9 @@
       dcCostEl.textContent = 'Cost: ' + formatSats(state.datacenterCost);
       dcCountEl.textContent = 'Datacenters: ' + state.datacenters;
 
-      minerGainEl.textContent = '+'+MINER_SPS+' sats/s';
-      rigGainEl.textContent = '+'+RIG_SPS+' sats/s';
       topRecord.textContent = formatSats(state.topRecord);
       saveTime.textContent = state.lastSave ? new Date(state.lastSave).toLocaleString() : 'Never';
 
-      buyMinerBtn.disabled = state.sats < state.minerCost;
-      buyRigBtn.disabled = state.sats < state.rigCost;
       // Server buy: check both funds and capacity
       buyServerBtn.disabled = (state.sats < state.serverCost) || (state.servers >= state.serverCapacity);
       // Rack buy: check funds and rack ownership limit
@@ -459,23 +406,6 @@
       updateUI(true);
     }
 
-    function buyMiner(){
-      if(state.sats >= state.minerCost){
-        state.sats -= state.minerCost;
-        state.miners += 1;
-        state.minerCost = roundCost(state.minerCost * 1.15);
-        updateUI();
-      }
-    }
-
-    function buyRig(){
-      if(state.sats >= state.rigCost){
-        state.sats -= state.rigCost;
-        state.rigs += 1;
-        state.rigCost = roundCost(state.rigCost * 1.18);
-        updateUI();
-      }
-    }
 
     // New: buy Server — increases clickPower by SERVER_CLICK_GAIN but limited by serverCapacity
     function buyServer(){
@@ -581,9 +511,7 @@
     }
 
     // ---------- Events ----------
-    mineBtn.addEventListener('click', () => { mineClick(); });
-    buyMinerBtn.addEventListener('click', buyMiner);
-    buyRigBtn.addEventListener('click', buyRig);
+    mineBtn.addEventListener('click', () => { mineClick(); })
     buyServerBtn.addEventListener('click', buyServer);
     buyRackBtn.addEventListener('click', buyServerRack);
     buyDCBtn.addEventListener('click', buyDatacenter);
@@ -620,8 +548,6 @@
       saveState,
       loadState,
       mineClick,
-      buyMiner,
-      buyRig,
       buyServer,
       buyServerRack,
       buyDatacenter,
