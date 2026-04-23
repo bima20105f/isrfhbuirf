@@ -32,12 +32,6 @@
 </head>
 <body>
 
-    <div class="ui">
-        <h1>Score: <span id="score">0</span></h1>
-        <p>Use <b>WASD</b> to Move | <b>Click</b> to Shoot</p>
-    </div>
-    <canvas id="gameCanvas"></canvas>
-
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -68,25 +62,7 @@
         window.addEventListener('keydown', e => keys[e.code] = true);
         window.addEventListener('keyup', e => keys[e.code] = false);
 
-        // Shoot on Click
-        window.addEventListener('mousedown', (e) => {
-            if (!gameActive) return;
-            
-            // Calculate angle between player and mouse
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-            const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
 
-            projectiles.push({
-                x: player.x,
-                y: player.y,
-                velocity: {
-                    x: Math.cos(angle) * 6,
-                    y: Math.sin(angle) * 6
-                }
-            });
-        });
 
         function spawnEnemy() {
             const radius = Math.random() * (30 - 10) + 10;
