@@ -51,6 +51,14 @@
         let score = 0;
         let gameActive = true;
 
+        // Timer for survival score (seconds)
+        const startTime = Date.now();
+        let scoreInterval = setInterval(() => {
+            if (!gameActive) return;
+            score = Math.floor((Date.now() - startTime) / 1000);
+            scoreElement.innerText = score;
+        }, 200);
+
         // Player Object
         const player = {
             x: canvas.width / 2,
@@ -67,8 +75,6 @@
         // Track Input
         window.addEventListener('keydown', e => keys[e.code] = true);
         window.addEventListener('keyup', e => keys[e.code] = false);
-
-
 
         function spawnEnemy() {
             const radius = Math.random() * (30 - 10) + 10;
@@ -143,6 +149,7 @@
                 const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
                 if (dist - enemy.radius - player.radius < 1) {
                     gameActive = false;
+                    clearInterval(scoreInterval);
                     alert("Game Over! Final Score: " + score);
                     location.reload();
                 }
@@ -151,12 +158,10 @@
                 projectiles.forEach((p, pIndex) => {
                     const dist = Math.hypot(p.x - enemy.x, p.y - enemy.y);
                     if (dist - enemy.radius < 1) {
-                        // Create explosion effect/remove
+                        // Create explosion effect/remove (no score change here — score is time survived)
                         setTimeout(() => {
                             enemies.splice(eIndex, 1);
                             projectiles.splice(pIndex, 1);
-                            score += 100;
-                            scoreElement.innerText = score;
                         }, 0);
                     }
                 });
